@@ -10,14 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// exiftool runs exiftool and returns a decoded JSON object with
-// various data types and any errors. The JSON object may be nil or not
-func Extract(exiftool, filename string) (*Metadata, error) {
-	// blank = exiftool on the path
-	if exiftool == "" {
-		exiftool = "exiftool"
-	}
+// Extract calls exiftool that is in the path to extract and return a
+// Metadata struct
+func Extract(filename string) (*Metadata, error) {
+	return ExtractCustom("exiftool", filename)
+}
 
+// ExtractCustom calls a specific external `exiftool` executable to
+// extract Metadata
+func ExtractCustom(exiftool, filename string) (*Metadata, error) {
 	cmd := exec.Command(exiftool, "-json", filename)
 	var stdout, stderr bytes.Buffer
 

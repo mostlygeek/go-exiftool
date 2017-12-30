@@ -65,6 +65,7 @@ func (m *Metadata) Error() string {
 	return str
 }
 
+// GetString attempts to return a value as a string
 func (m *Metadata) GetString(key string) (string, error) {
 	val, ok := m.raw[key]
 	if !ok {
@@ -78,6 +79,7 @@ func (m *Metadata) GetString(key string) (string, error) {
 	}
 }
 
+// GetFloat64 attempts to return a value as a float64.
 func (m *Metadata) GetFloat64(key string) (float64, error) {
 	val, ok := m.raw[key]
 	if !ok {
@@ -91,7 +93,9 @@ func (m *Metadata) GetFloat64(key string) (float64, error) {
 	}
 }
 
-// GetInt attempts to return a value as an integer
+// GetInt attempts to return a value as an int. By default json.Unmarshal turns
+// all JSON numeric types into float64 types. So that conversion is done first
+// and then the float64 is turned into an int
 func (m *Metadata) GetInt(key string) (int, error) {
 	val, err := m.GetFloat64(key) // default for numeric types
 	if err != nil {
@@ -100,7 +104,7 @@ func (m *Metadata) GetInt(key string) (int, error) {
 	return int(val), nil
 }
 
-// GetDate formats a value as a date
+// GetDate attempts to return a value as a time.Time
 func (m *Metadata) GetDate(key string) (time.Time, error) {
 	str, err := m.GetString(key)
 	if err != nil {
@@ -123,6 +127,7 @@ func (m *Metadata) KeyExists(key string) (ok bool) {
 	return
 }
 
+// Keys returns the names of all the JSON keys in the exiftool output
 func (m *Metadata) Keys() []string {
 	keys := make([]string, len(m.raw))
 	var i int
