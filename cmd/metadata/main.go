@@ -11,7 +11,7 @@ import (
 func main() {
 
 	flag.Parse()
-	meta, err := exiftool.Extract("exiftool", flag.Arg(0))
+	meta, err := exiftool.Extract(flag.Arg(0))
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

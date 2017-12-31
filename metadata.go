@@ -2,6 +2,8 @@ package exiftool
 
 import (
 	"encoding/json"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -65,6 +67,16 @@ func (m *Metadata) Error() string {
 	return str
 }
 
+// Get returns some value that was decoded from the exiftool data
+// but we don't know what the type is
+func (m *Metadata) Get(key string) (interface{}, error) {
+	val, ok := m.raw[key]
+	if !ok {
+		return nil, ErrKey404
+	}
+	return val, nil
+}
+
 // GetString attempts to return a value as a string
 func (m *Metadata) GetString(key string) (string, error) {
 	val, ok := m.raw[key]
@@ -86,10 +98,77 @@ func (m *Metadata) GetFloat64(key string) (float64, error) {
 		return 0, ErrKey404
 	}
 
-	if v, ok := val.(float64); !ok {
+	if v, ok := toFloat64(val); !ok {
 		return 0, errors.Wrap(ErrInvalidType, "Could not cast to float64")
 	} else {
 		return v, nil
+	}
+}
+
+// GetFloat64s returns an []float64. It tries to return as much as
+// possible as a slice of []float64, doing type conversions from integer and
+// string types to float64
+func (m *Metadata) GetFloats64s(key string) ([]float64, error) {
+	val, ok := m.raw[key]
+	if !ok {
+		return nil, ErrKey404
+	}
+
+	if k := reflect.TypeOf(val).Kind(); k != reflect.Slice && k != reflect.Array {
+		return nil, errors.New("Not an array")
+	}
+
+	s := reflect.ValueOf(val)
+	num := s.Len()
+	floats := make([]float64, num, num)
+	allOK := true
+	for i := 0; i < num; i++ {
+		elem := s.Index(i).Interface()
+		floats[i], allOK = toFloat64(elem)
+	}
+
+	if !allOK {
+		return floats, errors.New("Could not convert all values")
+	} else {
+		return floats, nil
+	}
+}
+
+func toFloat64(something interface{}) (float64, bool) {
+	switch v := something.(type) {
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case int8:
+		return float64(v), true
+	case int16:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint:
+		return float64(v), true
+	case uint8:
+		return float64(v), true
+	case uint16:
+		return float64(v), true
+	case uint32:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case float32:
+		return float64(v), true
+	case string:
+		v2, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return v2, true
+		} else {
+			return 0, false
+		}
+	default:
+		return 0, false
 	}
 }
 

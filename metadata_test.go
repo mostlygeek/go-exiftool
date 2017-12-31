@@ -81,6 +81,35 @@ func TestTypeConversion(t *testing.T) {
 	assert.Equal("2010:03:04 01:02:03.456", tTime.Format(TimeFormatMS))
 }
 
+// Test that a []float64 is returned
+func TestGetFloat64s(t *testing.T) {
+	assert := assert.New(t)
+	{
+		tdata := &Metadata{raw: map[string]interface{}{
+			"data": []interface{}{
+				int(1), int8(2), int16(3), int32(4), int64(5),
+				uint(6), uint8(7), uint16(8), uint32(9), uint64(10),
+				float32(11), float64(12), "13",
+			},
+		}}
+
+		floats, err := tdata.GetFloats64s("data")
+		assert.NoError(err)
+		assert.Equal([]float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, floats)
+	}
+
+	// ensure unconvertable values return an error
+	{
+		tdata := &Metadata{raw: map[string]interface{}{
+			"data": []interface{}{1, 2, "fail", struct{}{}},
+		}}
+
+		floats, err := tdata.GetFloats64s("data")
+		assert.NotNil(err)
+		assert.Equal([]float64{1, 2, 0, 0}, floats)
+	}
+}
+
 func TestKeyHelpers(t *testing.T) {
 	assert := assert.New(t)
 	assert.False(metaTest.KeyExists("nope"))
