@@ -105,9 +105,9 @@ func (m *Metadata) GetFloat64(key string) (float64, error) {
 	}
 }
 
-// GetFloat64s returns an []float64. It tries to return as much as
-// possible as a slice of []float64, doing type conversions from integer and
-// string types to float64
+// GetFloat64s returns an []float64. Values in an array that can not be
+// parsed into a float64 are returned as 0. When every value can be converted
+// error will be nil
 func (m *Metadata) GetFloats64s(key string) ([]float64, error) {
 	val, ok := m.raw[key]
 	if !ok {
