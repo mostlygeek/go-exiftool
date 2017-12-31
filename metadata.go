@@ -57,8 +57,9 @@ func (m *Metadata) CreateDate() (time.Time, bool) {
 	}
 }
 
-// Error is a conveniece function for getting the Error key
-// which is set by exiftool when it can't process something
+// Error returns the value of `Error` key if it exists, a blank string
+// otherwise. Sometimes exiftool can extract some data and still
+// error because something goes wrong
 func (m *Metadata) Error() string {
 	str, err := m.GetString("Error")
 	if err != nil && err != ErrKey404 {
