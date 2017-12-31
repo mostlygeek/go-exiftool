@@ -68,7 +68,7 @@ func (m *Metadata) Error() string {
 }
 
 // Get returns some value that was decoded from the exiftool data
-// but we don't know what the type is
+// but the type is unknown
 func (m *Metadata) Get(key string) (interface{}, error) {
 	val, ok := m.raw[key]
 	if !ok {
