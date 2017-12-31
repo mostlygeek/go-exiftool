@@ -40,9 +40,7 @@ func (m *Metadata) MIMEType() string {
 	}
 }
 
-// CreateDate is a convenience function for getting the CreationDate
-// as a time.Time. False is return if there was a parse error or it
-// doesn't exist
+// CreateDate returns the `CreateDate` key, if it exists, as a time.Time
 func (m *Metadata) CreateDate() (time.Time, bool) {
 	key := "CreateDate"
 	if m.KeyExists("SubSecCreateDate") {
@@ -79,7 +77,7 @@ func (m *Metadata) Get(key string) (interface{}, error) {
 	return val, nil
 }
 
-// GetString attempts to return a value as a string
+// GetString returns a value as a string
 func (m *Metadata) GetString(key string) (string, error) {
 	val, ok := m.raw[key]
 	if !ok {
@@ -93,7 +91,7 @@ func (m *Metadata) GetString(key string) (string, error) {
 	}
 }
 
-// GetFloat64 attempts to return a value as a float64.
+// GetFloat64 returns a value as a float64.
 func (m *Metadata) GetFloat64(key string) (float64, error) {
 	val, ok := m.raw[key]
 	if !ok {
@@ -174,7 +172,7 @@ func toFloat64(something interface{}) (float64, bool) {
 	}
 }
 
-// GetInt attempts to return a value as an int. By default json.Unmarshal turns
+// GetInt returns a value as an int. By default json.Unmarshal turns
 // all JSON numeric types into float64 types. So that conversion is done first
 // and then the float64 is turned into an int
 func (m *Metadata) GetInt(key string) (int, error) {
@@ -185,7 +183,7 @@ func (m *Metadata) GetInt(key string) (int, error) {
 	return int(val), nil
 }
 
-// GetDate attempts to return a value as a time.Time
+// GetDate parses a value into a time.Time
 func (m *Metadata) GetDate(key string) (time.Time, error) {
 	str, err := m.GetString(key)
 	if err != nil {
@@ -202,7 +200,7 @@ func (m *Metadata) GetDate(key string) (time.Time, error) {
 	return t, nil
 }
 
-// Bytes attempts to get binary data
+// Bytes extracts base64 encoded binary data in the metadata
 func (m *Metadata) GetBytes(key string) ([]byte, error) {
 	s, err := m.GetString(key)
 	if err != nil {

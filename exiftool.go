@@ -1,5 +1,5 @@
-// Package exiftool provides a golang interface to the venerable exiftool
-// to retrieve metadata from media files.
+// Package exiftool provides golang bindings for calling exiftool and
+// working with the metadata it is able to extract from a media file
 package exiftool
 
 import (
@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Extract calls exiftool that is in the path to extract and return a
+// Extract calls exiftool that is available in $PATH to extract and return a
 // Metadata struct
 func Extract(filename string) (*Metadata, error) {
 	return ExtractCustom("exiftool", filename)
 }
 
-// ExtractCustom calls a specific external `exiftool` executable to
+// ExtractCustom calls a specific exiftool executable to
 // extract Metadata
 func ExtractCustom(exiftool, filename string) (*Metadata, error) {
 	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv", filename)
