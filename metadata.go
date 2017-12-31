@@ -1,6 +1,7 @@
 package exiftool
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"strconv"
@@ -198,6 +199,19 @@ func (m *Metadata) GetDate(key string) (time.Time, error) {
 		}
 	}
 	return t, nil
+}
+
+// Bytes attempts to get binary data
+func (m *Metadata) GetBytes(key string) ([]byte, error) {
+	s, err := m.GetString(key)
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not get base64 value")
+	}
+
+	if len(s) < 8 || s[:7] != "base64:" {
+		return nil, errors.New("Does not appear to be base64 encoded")
+	}
+	return base64.StdEncoding.DecodeString(s[7:])
 }
 
 // KeyExists checks if a specific value exists

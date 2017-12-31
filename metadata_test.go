@@ -1,6 +1,7 @@
 package exiftool
 
 import (
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -117,4 +118,15 @@ func TestKeyHelpers(t *testing.T) {
 	for _, key := range metaTest.Keys() {
 		assert.True(metaTest.KeyExists(key))
 	}
+}
+
+func TestGetBytes(t *testing.T) {
+	assert := assert.New(t)
+	val := []byte("Hello World")
+	tdata := &Metadata{raw: map[string]interface{}{
+		"data": "base64:" + base64.StdEncoding.EncodeToString(val),
+	}}
+	bytes, err := tdata.GetBytes("data")
+	assert.NoError(err)
+	assert.Equal([]byte("Hello World"), bytes)
 }
