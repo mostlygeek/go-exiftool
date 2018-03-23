@@ -63,8 +63,6 @@ func (e *Stayopen) Stop() {
 	// wait for both goroutines to finish before finishing
 	close(e.in)
 	e.waitEnd.Wait()
-
-	e.cmd.Process.Kill()
 	e.cmd = nil
 }
 

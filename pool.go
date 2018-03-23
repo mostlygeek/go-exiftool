@@ -1,17 +1,16 @@
 package exiftool
 
-import (
-	"math/rand"
-	"time"
-)
-
+// Pool creates multiple stay open exiftool instances and spreads the work
+// across them with a simple round robin distribution.
 type Pool struct {
 	stayopens []*Stayopen
-	rand      *rand.Rand
+	c         uint8
+	l         int
 }
 
 func (p *Pool) Extract(filename string) (*Metadata, error) {
-	return p.stayopens[p.rand.Intn(len(p.stayopens))].Extract(filename)
+	p.c++
+	return p.stayopens[p.c%l].Extract(filename)
 }
 
 func (p *Pool) Stop() {
@@ -23,7 +22,7 @@ func (p *Pool) Stop() {
 func NewPool(exiftool string, num int) *Pool {
 	p := &Pool{
 		stayopens: make([]*Stayopen, num, num),
-		rand:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		l:         num,
 	}
 
 	for i := 0; i < num; i++ {
