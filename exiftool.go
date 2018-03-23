@@ -21,7 +21,7 @@ func Extract(filename string) (*Metadata, error) {
 // ExtractCustom calls a specific exiftool executable to
 // extract Metadata
 func ExtractCustom(exiftool, filename string) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv", filename)
+	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv", "-groupHeadings", filename)
 	var stdout, stderr bytes.Buffer
 
 	cmd.Stdout = &stdout

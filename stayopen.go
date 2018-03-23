@@ -70,7 +70,9 @@ func NewStayopen(exiftool string) *Stayopen {
 		stayopen.waitEnd.Add(1)
 		for filename := range stayopen.in {
 			fmt.Fprintln(stdin, "-json")
+			fmt.Fprintln(stdin, "-binary")
 			fmt.Fprintln(stdin, "--printConv")
+			fmt.Fprintln(stdin, "-groupHeadings")
 			fmt.Fprintln(stdin, filename)
 			fmt.Fprintln(stdin, "-execute")
 		}
