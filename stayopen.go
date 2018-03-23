@@ -3,7 +3,6 @@ package exiftool
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -37,22 +36,7 @@ func (e *Stayopen) Extract(filename string) (*Metadata, error) {
 	e.in <- filename
 	data := <-e.out
 
-	container := make([]map[string]interface{}, 1, 1)
-	err := json.Unmarshal(data, &container)
-	if err != nil {
-		return nil, errors.Wrap(err, "JSON unmarshal failed")
-	}
-
-	if len(container) != 1 {
-		return nil, errors.New("Expected one record")
-	}
-
-	meta := NewMetadata(container[0])
-	if errstr := meta.Error(); errstr != "" {
-		return meta, errors.New(errstr)
-	}
-
-	return meta, nil
+	return parse(data)
 }
 
 func (e *Stayopen) Stop() {

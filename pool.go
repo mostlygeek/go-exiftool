@@ -4,13 +4,13 @@ package exiftool
 // across them with a simple round robin distribution.
 type Pool struct {
 	stayopens []*Stayopen
-	c         uint8
+	c         int
 	l         int
 }
 
 func (p *Pool) Extract(filename string) (*Metadata, error) {
 	p.c++
-	return p.stayopens[p.c%l].Extract(filename)
+	return p.stayopens[p.c%p.l].Extract(filename)
 }
 
 func (p *Pool) Stop() {
