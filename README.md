@@ -4,7 +4,7 @@
 
 go-exiftool makes it easy to extract metadata with [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/) and work with it in Go.  There are currently no comparable native Go libraries with the breadth and depth of exiftool. In exchange for functionality there is a performance and a deployment penalty. 
 
-Fortunately, these are minimal. exiftool only requires perl5, which is available by default on almost every platform. The performance overhead of using an external program can be mitigated in many ways (ie: parallel processing). 
+Fortunately, these are minimal. exiftool only requires perl5, which is available by default on almost every platform. The performance overhead of using an external program can be mitigated in many ways (ie: parallel processing). Using `Stayopen` and `Pool` helper libraries makes metadata extraction pretty fast.  On a 13" 2017 Macbook Pro I was able to extract metadata for 600 images in about 4 seconds. 
 
 This library was opensourced so others can _not worry about it_ and just work with the metadata. :) 
 
@@ -12,9 +12,9 @@ This library was opensourced so others can _not worry about it_ and just work wi
 
 Under the covers `go-exiftool` does this: 
 
-* `exiftool -json -binary --printConv <filename>` 
-* parses the JSON into a `map[string]interface{}`
-* provides helper functions to attmpt to turn `interface{}` into a typed value.
+* `exiftool -json -binary --printConv -groupNames <filename>` 
+* Provides a `Metadata` abstraction over the data with some common fields
+* Uses [jsonparser](https://github.com/buger/jsonparser) so it is fast
 
 
 See: [GoDoc Document](https://godoc.org/github.com/mostlygeek/go-exiftool) for complete reference. 
@@ -22,24 +22,14 @@ See: [GoDoc Document](https://godoc.org/github.com/mostlygeek/go-exiftool) for c
 ```golang
 metdadata, err := exiftool.Extract("path/to/file.JPG")
 
-// get a string
-val, err := metadata.GetString("FileName")
-
-// get a float64, by default all numbers are float64, cause JSON
-val, err := metadata.GetFloat64("GPSLongitude")
-
-// get an int, this gets a float64 and converts it to an int
-val, err := metadata.GetInt("ISO")
-
-/*** 
- * Helpers for well known keys
- ***/
-
 // gets the detected MIME type
 mimetype := metadata.MIMEType()
 
 // gets the "CreateDate" key as a time.Time
 created, found := metadata.CreateDate()
+
+// gets the latitude and longitude as float64 values
+lat, long, found := metadata.GPSPosition()
 
 // gets any exiftool parsing errors
 exifError := metadata.Error()
