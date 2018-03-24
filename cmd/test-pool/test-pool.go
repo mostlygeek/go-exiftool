@@ -28,7 +28,7 @@ func main() {
 		if err != nil {
 			fmt.Println("FAIL", path, err.Error())
 		} else {
-			fmt.Println("OK", path, metadata.MIMEType())
+			fmt.Println("OK", path, "mime:", metadata.MIMEType())
 		}
 
 		return nil
