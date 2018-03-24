@@ -12,9 +12,8 @@ import (
 )
 
 // Stayopen abstracts running exiftool with `-stay_open` to greatly improve
-// performance by removing the startup overhead of perl for each indivdual file
-// remember to call Stayopen.Stop() to signal exiftool to shutdown otherwise
-// it may make zombie perl processes
+// performance. Remember to call Stayopen.Stop() to signal exiftool to shutdown
+// to avoid zombie perl processes
 type Stayopen struct {
 	sync.Mutex
 	cmd *exec.Cmd
