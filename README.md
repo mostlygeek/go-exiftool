@@ -8,6 +8,10 @@ Fortunately, these are minimal. exiftool only requires perl5, which is available
 
 This library was opensourced so others can _not worry about it_ and just work with the metadata. :) 
 
+## Notice
+
+This library is still pretty young. Please use and report any bugs and issues. 
+
 ## Usage
 
 Under the covers `go-exiftool` does this: 
