@@ -17,10 +17,15 @@ import (
 // it may make zombie perl processes
 type Stayopen struct {
 	sync.Mutex
-	cmd     *exec.Cmd
+	cmd *exec.Cmd
+
+	// channels for passing data to the input/output of
+	// the running exiftool
+	in  chan string
+	out chan []byte
+
+	// waits for stdin/stdout goroutines to finish when stopping
 	waitEnd sync.WaitGroup
-	in      chan string
-	out     chan []byte
 }
 
 // Extract calls exiftool on the supplied filename
@@ -50,7 +55,7 @@ func (e *Stayopen) Stop() {
 	e.cmd = nil
 }
 
-func NewStayopen(exiftool string) *Stayopen {
+func NewStayopen(exiftool string) (*Stayopen, error) {
 	stayopen := &Stayopen{
 		in:  make(chan string),
 		out: make(chan []byte),
@@ -63,11 +68,15 @@ func NewStayopen(exiftool string) *Stayopen {
 	var startReady sync.WaitGroup
 	startReady.Add(2)
 
+	if err := stayopen.cmd.Start(); err != nil {
+		return nil, errors.Wrap(err, "Failed starting exiftool in stay_open mode")
+	}
+
 	// send commands to exiftool's stdin
 	go func() {
-		stayopen.cmd.Start()
 		startReady.Done()
 		stayopen.waitEnd.Add(1)
+
 		for filename := range stayopen.in {
 			fmt.Fprintln(stdin, "-json")
 			fmt.Fprintln(stdin, "-binary")
@@ -109,7 +118,7 @@ func NewStayopen(exiftool string) *Stayopen {
 
 	// wait for both go-routines to startup
 	startReady.Wait()
-	return stayopen
+	return stayopen, nil
 }
 
 func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {

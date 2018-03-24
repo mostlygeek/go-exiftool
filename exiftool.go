@@ -4,7 +4,6 @@ package exiftool
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"os/exec"
 
@@ -21,7 +20,8 @@ func Extract(filename string) (*Metadata, error) {
 // ExtractCustom calls a specific exiftool executable to
 // extract Metadata
 func ExtractCustom(exiftool, filename string) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv", "-groupHeadings", filename)
+	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv",
+		"-groupHeadings", filename)
 	var stdout, stderr bytes.Buffer
 
 	cmd.Stdout = &stdout
@@ -53,9 +53,10 @@ func ExtractReader(source io.Reader) (*Metadata, error) {
 // ExtractReaderCustom uses a specific external exiftool to do the
 // extraction
 func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv", "-")
-	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv",
+		"-groupHeadings", "-")
 
+	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	cmd.Stdin = source
@@ -75,23 +76,4 @@ func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
 	}
 
 	return parse(stdout.Bytes())
-}
-
-func parse(data []byte) (*Metadata, error) {
-	container := make([]map[string]interface{}, 1, 1)
-	err := json.Unmarshal(data, &container)
-	if err != nil {
-		return nil, errors.Wrap(err, "JSON unmarshal failed")
-	}
-
-	if len(container) != 1 {
-		return nil, errors.New("Expected one record")
-	}
-
-	meta := NewMetadata(container[0])
-	if errstr := meta.Error(); errstr != "" {
-		return meta, errors.New(errstr)
-	}
-
-	return meta, nil
 }

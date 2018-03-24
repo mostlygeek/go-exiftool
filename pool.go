@@ -1,8 +1,9 @@
 package exiftool
 
 import (
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // Pool creates multiple stay open exiftool instances and spreads the work
@@ -35,15 +36,19 @@ func (p *Pool) Stop() {
 	p.stopped = true
 }
 
-func NewPool(exiftool string, num int) *Pool {
+func NewPool(exiftool string, num int) (*Pool, error) {
 	p := &Pool{
 		stayopens: make([]*Stayopen, num, num),
 		l:         num,
 	}
 
+	var err error
 	for i := 0; i < num; i++ {
-		p.stayopens[i] = NewStayopen(exiftool)
+		p.stayopens[i], err = NewStayopen(exiftool)
+		if err != nil {
+			return nil, errors.Wrap(err, "Could not create Stayopen")
+		}
 	}
 
-	return p
+	return p, nil
 }

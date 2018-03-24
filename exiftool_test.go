@@ -10,17 +10,17 @@ import (
 func TestExtract(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
-	meta, err := Extract("testdata/Apple_iPhone_6plus.jpg")
+	meta, err := Extract("testdata/IMG_7238.JPG")
 	if assert.NoError(err) && assert.NotNil(meta) {
 		create, _ := meta.CreateDate()
-		assert.Equal("2014-10-31 13:32:37 +0000 UTC", create.String())
+		assert.Equal("2016-06-17 19:16:43 +0000 UTC", create.String())
 	}
 }
 
 func TestExtractReader(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
-	f, err := os.Open("testdata/Apple_iPhone_6plus.jpg")
+	f, err := os.Open("testdata/IMG_7238.JPG")
 	if !assert.NoError(err) {
 		return
 	}
@@ -28,6 +28,6 @@ func TestExtractReader(t *testing.T) {
 	meta, err := ExtractReader(f)
 	if assert.NoError(err) && assert.NotNil(meta) {
 		create, _ := meta.CreateDate()
-		assert.Equal("2014-10-31 13:32:37 +0000 UTC", create.String())
+		assert.Equal("2016-06-17 19:16:43 +0000 UTC", create.String())
 	}
 }
