@@ -29,9 +29,20 @@ func TestMIMEType(t *testing.T) {
 
 func TestCreateDate(t *testing.T) {
 	assert := assert.New(t)
-	create, ok := meta.CreateDate()
-	assert.True(ok)
-	assert.Equal("2016-06-17 19:16:43 +0000 UTC", create.String())
+
+	{ // with gps coords, timezone info is correct
+		metaGeo, _ := Extract("testdata/IMG_7238.JPG")
+		create, ok := metaGeo.CreateDate()
+		assert.True(ok)
+		assert.Equal("2016-06-17 19:16:43 +0100 BST", create.String())
+	}
+
+	{ // no gps coords get +000 UTC timezone
+		metaNoGeo, _ := Extract("testdata/IMG_7238-nogeo.jpg")
+		create, ok := metaNoGeo.CreateDate()
+		assert.True(ok)
+		assert.Equal("2016-06-17 19:16:43 +0000 UTC", create.String())
+	}
 }
 
 func TestGetBytes(t *testing.T) {
