@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bradfitz/latlong"
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
 )
@@ -13,11 +14,16 @@ import (
 var (
 	ErrKey404      = errors.New("Key does not exist")
 	ErrInvalidType = errors.New("Could not convert to that type")
+
+	// json paths to where date information can be found in images ...
+	datePaths = [][]string{
+		[]string{"EXIF", "CreateDate"},
+		[]string{"XMP", "DateCreated"},
+	}
 )
 
 const (
-	TimeFormat   = "2006:01:02 15:04:05"
-	TimeFormatMS = TimeFormat + ".000"
+	TimeFormat = "2006:01:02 15:04:05"
 )
 
 // Metadata provides access to the metadata returned by exiftool
@@ -41,27 +47,40 @@ func (m *Metadata) MIMEType() string {
 }
 
 // CreateDate returns the date the file was created if the information
-// is available
+// is available. If GPS coordinates exist the return value will include
+// timezone information
 func (m *Metadata) CreateDate() (time.Time, bool) {
 	var datestr string
+	var t time.Time
 	var err error
-	datestr, err = jsonparser.GetString(m.raw, "EXIF", "CreateDate")
-	if err != nil {
-		datestr, err = jsonparser.GetString(m.raw, "XMP", "DateCreated")
-	}
 
-	if err != nil {
-		return time.Time{}, false
-	}
-
-	t, err := time.Parse(TimeFormatMS, datestr)
-	if err != nil {
-		t, err = time.Parse(TimeFormat, datestr)
-		if err != nil {
-			return t, false
+	for _, jsonPath := range datePaths {
+		datestr, err = jsonparser.GetString(m.raw, jsonPath...)
+		if err == nil {
+			break
 		}
 	}
-	return t, true
+
+	if err != nil {
+		return t, false
+	}
+
+	var location *time.Location
+	if lat, long, ok := m.GPSPosition(); ok {
+		if zonename := latlong.LookupZoneName(lat, long); zonename != "" {
+			if loc, err := time.LoadLocation(zonename); err == nil {
+				location = loc
+			}
+		}
+	}
+
+	if location != nil {
+		t, err = time.ParseInLocation(TimeFormat, datestr, location)
+	} else {
+		t, err = time.Parse(TimeFormat, datestr)
+	}
+
+	return t, (err == nil)
 }
 
 // GPSPosition extracts latitude, longitude from metadata. Third return value
