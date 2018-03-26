@@ -121,12 +121,16 @@ func NewStayopen(exiftool string) (*Stayopen, error) {
 }
 
 func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if i := bytes.Index(data, []byte("\n{ready}")); i >= 0 {
-		return i + 8, data[:i], nil
+	if i := bytes.Index(data, []byte("\n{ready}\n")); i >= 0 {
+		if atEOF && len(data) == (i+9) { // nothing left to scan
+			return i + 9, data[:i], bufio.ErrFinalToken
+		} else {
+			return i + 9, data[:i], nil
+		}
 	}
 
 	if atEOF {
-		return len(data), data, io.EOF
+		return 0, data, io.EOF
 	}
 
 	return 0, nil, nil
