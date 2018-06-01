@@ -3,6 +3,7 @@ package exiftool
 import (
 	"bytes"
 	"encoding/base64"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,16 +87,24 @@ func (m *Metadata) CreateDate() (time.Time, bool) {
 // GPSPosition extracts latitude, longitude from metadata. Third return value
 // will be false if it was not able to find both values
 func (m *Metadata) GPSPosition() (float64, float64, bool) {
-	latitude, err := jsonparser.GetFloat(m.raw, "Composite", "GPSLatitude")
+
+	lat, _ := jsonparser.GetString(m.raw, "Composite", "GPSLatitude")
+	long, _ := jsonparser.GetString(m.raw, "Composite", "GPSLongitude")
+
+	if lat == "" || long == "" {
+		return 0, 0, false
+	}
+
+	latF, err := parseGPS(lat)
 	if err != nil {
 		return 0, 0, false
 	}
-	longitude, err := jsonparser.GetFloat(m.raw, "Composite", "GPSLongitude")
+	longF, err := parseGPS(long)
 	if err != nil {
 		return 0, 0, false
 	}
 
-	return latitude, longitude, true
+	return latF, longF, true
 }
 
 func (m *Metadata) GetBytes(keys ...string) ([]byte, error) {
@@ -142,4 +151,53 @@ func parse(data []byte) (*Metadata, error) {
 		return meta, errors.New(errstr)
 	}
 	return meta, nil
+}
+
+func parseGPS(coord string) (float64, error) {
+	// exiftool coords look like: 51 deg 29' 57.68" N
+	parts := strings.Split(coord, " ")
+	var d, m, s float64
+	var negDir bool
+	var err error
+	for i, p := range parts {
+		if i == 0 {
+			d, err = strconv.ParseFloat(p, 64)
+			if err != nil {
+				return 0, errors.Wrap(err, "Failed parsing degrees")
+			}
+			continue
+		}
+
+		if p == "deg" {
+			continue
+		}
+
+		if p[len(p)-1] == '\'' {
+			m, err = strconv.ParseFloat(p[:len(p)-1], 64)
+			if err != nil {
+				return 0, errors.Wrap(err, "Failed parsing minutes")
+			}
+			continue
+		}
+
+		if p[len(p)-1] == '"' {
+			s, err = strconv.ParseFloat(p[:len(p)-1], 64)
+			if err != nil {
+				return 0, errors.Wrap(err, "Failed parsing seconds")
+			}
+			continue
+		}
+
+		if p == "S" || p == "W" {
+			negDir = true
+		}
+	}
+
+	v := d + m/60.0 + s/60/60
+	if negDir {
+		v = 0 - v
+	}
+
+	return v, nil
+
 }

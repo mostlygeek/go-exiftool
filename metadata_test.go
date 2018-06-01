@@ -58,7 +58,21 @@ func TestGPSPosition(t *testing.T) {
 	assert := assert.New(t)
 
 	lat, long, ok := meta.GPSPosition()
+
 	assert.True(ok)
-	assert.Equal(51.4993555555556, lat)
-	assert.Equal(-0.129980555555556, long)
+	assert.Equal(51.49935555555555, lat)
+	assert.Equal(-0.12998055555555554, long)
+}
+
+func TestParseGPS(t *testing.T) {
+	c := map[string]float64{
+		`51 deg 29' 57.68" N`: 51.49935555555555,
+		`51 deg 29' 57.68" S`: -51.49935555555555,
+	}
+	assert := assert.New(t)
+	for coord, expect := range c {
+		val, err := parseGPS(coord)
+		assert.NoError(err)
+		assert.Equal(expect, val)
+	}
 }

@@ -20,7 +20,7 @@ func Extract(filename string) (*Metadata, error) {
 // ExtractCustom calls a specific exiftool executable to
 // extract Metadata
 func ExtractCustom(exiftool, filename string) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv",
+	cmd := exec.Command(exiftool, "-json", "-binary",
 		"-groupHeadings", filename)
 	var stdout, stderr bytes.Buffer
 
@@ -53,7 +53,7 @@ func ExtractReader(source io.Reader) (*Metadata, error) {
 // ExtractReaderCustom uses a specific external exiftool to do the
 // extraction
 func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary", "--printConv",
+	cmd := exec.Command(exiftool, "-json", "-binary",
 		"-groupHeadings", "-")
 
 	var stdout, stderr bytes.Buffer
