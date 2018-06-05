@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -22,6 +23,9 @@ type Stayopen struct {
 	// the running exiftool
 	in  chan string
 	out chan []byte
+
+	// flags to pass to exiftool
+	flags []string
 
 	// waits for stdin/stdout goroutines to finish when stopping
 	waitEnd sync.WaitGroup
@@ -54,7 +58,7 @@ func (e *Stayopen) Stop() {
 	e.cmd = nil
 }
 
-func NewStayopen(exiftool string) (*Stayopen, error) {
+func NewStayopenFlags(exiftool string, flags []string) (*Stayopen, error) {
 	stayopen := &Stayopen{
 		in:  make(chan string),
 		out: make(chan []byte),
@@ -76,11 +80,10 @@ func NewStayopen(exiftool string) (*Stayopen, error) {
 		startReady.Done()
 		stayopen.waitEnd.Add(1)
 
+		// join them cause it's a bit more efficient
+		fStr := strings.Join(flags, "\n")
 		for filename := range stayopen.in {
-			fmt.Fprintln(stdin, "-json")
-			fmt.Fprintln(stdin, "-binary")
-			fmt.Fprintln(stdin, "--printConv")
-			fmt.Fprintln(stdin, "-groupHeadings")
+			fmt.Fprintln(stdin, fStr)
 			fmt.Fprintln(stdin, filename)
 			fmt.Fprintln(stdin, "-execute")
 		}
@@ -96,7 +99,7 @@ func NewStayopen(exiftool string) (*Stayopen, error) {
 		stayopen.waitEnd.Done()
 	}()
 
-	// scan exiftool's stdout, parse out JSON messages
+	// scan exiftool's stdout, parse out messages
 	// and publish them on the out channel
 	go func() {
 		scanner := bufio.NewScanner(stdout)
@@ -118,6 +121,10 @@ func NewStayopen(exiftool string) (*Stayopen, error) {
 	// wait for both go-routines to startup
 	startReady.Wait()
 	return stayopen, nil
+}
+
+func NewStayopen(exiftool string) (*Stayopen, error) {
+	return NewStayopenFlags(exiftool, []string{"-json", "-binary", "-groupHeadings"})
 }
 
 func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {

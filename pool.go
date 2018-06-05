@@ -37,6 +37,10 @@ func (p *Pool) Stop() {
 }
 
 func NewPool(exiftool string, num int) (*Pool, error) {
+	return NewPoolFlags(exiftool, []string{"-json", "-binary", "-groupHeadings"}, num)
+}
+
+func NewPoolFlags(exiftool string, flags []string, num int) (*Pool, error) {
 	p := &Pool{
 		stayopens: make([]*Stayopen, num, num),
 		l:         num,
@@ -44,7 +48,7 @@ func NewPool(exiftool string, num int) (*Pool, error) {
 
 	var err error
 	for i := 0; i < num; i++ {
-		p.stayopens[i], err = NewStayopen(exiftool)
+		p.stayopens[i], err = NewStayopenFlags(exiftool, flags)
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not create Stayopen")
 		}

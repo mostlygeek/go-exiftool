@@ -1,7 +1,6 @@
 package exiftool
 
 import (
-	"bytes"
 	"encoding/base64"
 	"strconv"
 	"strings"
@@ -145,14 +144,20 @@ func (m *Metadata) MarshalJSON() ([]byte, error) { return m.raw, nil }
 
 // parse extracts the metadata bytes out of exiftool's output
 func parse(data []byte) (*Metadata, error) {
-	data = bytes.Trim(data, "[] ") // exiftool returns an array
-	meta := NewMetadata(data)
+	// exiftool returns an array, just need the first element
+	el, _, _, err := jsonparser.Get(data, "[0]")
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not extract first JSON array element")
+	}
+	meta := NewMetadata(el)
 	if errstr := meta.Error(); errstr != "" {
 		return meta, errors.New(errstr)
 	}
 	return meta, nil
 }
 
+// parseGPS parses a Degree,Minute,Seconds GPS coordinate
+// and turns it into a float64
 func parseGPS(coord string) (float64, error) {
 	// exiftool coords look like: 51 deg 29' 57.68" N
 	parts := strings.Split(coord, " ")
@@ -163,6 +168,7 @@ func parseGPS(coord string) (float64, error) {
 		if i == 0 {
 			d, err = strconv.ParseFloat(p, 64)
 			if err != nil {
+
 				return 0, errors.Wrap(err, "Failed parsing degrees")
 			}
 			continue

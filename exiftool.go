@@ -20,8 +20,17 @@ func Extract(filename string) (*Metadata, error) {
 // ExtractCustom calls a specific exiftool executable to
 // extract Metadata
 func ExtractCustom(exiftool, filename string) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary",
-		"-groupHeadings", filename)
+	data, err := ExtractFlags(exiftool, filename, "-json", "-binary", "-groupHeadings")
+	if err != nil {
+		return nil, err
+	}
+	return parse(data)
+}
+
+// ExtractParams calls a specific exiftool with custom flags
+func ExtractFlags(exiftool, filename string, flags ...string) ([]byte, error) {
+	flags = append(flags, filename)
+	cmd := exec.Command(exiftool, flags...)
 	var stdout, stderr bytes.Buffer
 
 	cmd.Stdout = &stdout
@@ -41,7 +50,7 @@ func ExtractCustom(exiftool, filename string) (*Metadata, error) {
 		return nil, errors.New("No output")
 	}
 
-	return parse(stdout.Bytes())
+	return stdout.Bytes(), nil
 }
 
 // ExtractReader extracts metadata from an io.Reader instead of a
@@ -50,11 +59,21 @@ func ExtractReader(source io.Reader) (*Metadata, error) {
 	return ExtractReaderCustom("exiftool", source)
 }
 
-// ExtractReaderCustom uses a specific external exiftool to do the
-// extraction
+// ExtractReaderCustom calls a specific external exiftool to do the extraction
 func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
-	cmd := exec.Command(exiftool, "-json", "-binary",
-		"-groupHeadings", "-")
+	data, err := ExtractReaderFlags(exiftool, source, "-json", "-binary", "-groupHeadings")
+	if err != nil {
+		return nil, err
+	}
+
+	return parse(data)
+}
+
+// ExtractReaderFlags calls a specific exiftool with custom flags. File data is
+// passed in via stdin
+func ExtractReaderFlags(exiftool string, source io.Reader, flags ...string) ([]byte, error) {
+	flags = append(flags, "-")
+	cmd := exec.Command(exiftool, flags...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -75,5 +94,5 @@ func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
 		return nil, errors.New("No output")
 	}
 
-	return parse(stdout.Bytes())
+	return stdout.Bytes(), nil
 }
