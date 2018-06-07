@@ -66,13 +66,19 @@ func TestGPSPosition(t *testing.T) {
 
 func TestParseGPS(t *testing.T) {
 	c := map[string]float64{
-		`51 deg 29' 57.68" N`: 51.49935555555555,
-		`51 deg 29' 57.68" S`: -51.49935555555555,
+		`51 deg 29' 57.68" N`: 51.49935555,
+		`51 deg 29' 57.68" S`: -51.4993555,
+		`10 deg 20" S`:        -10.0055556,
+		`10 deg 20"`:          10.0055556,
+		`10 deg`:              10.0,
+		`0 deg 20'`:           0.3333333,
+		`0 deg 20' S`:         -0.3333333,
 	}
+
 	assert := assert.New(t)
 	for coord, expect := range c {
-		val, err := parseGPS(coord)
+		val, err := ParseGPS(coord)
 		assert.NoError(err)
-		assert.Equal(expect, val)
+		assert.InDelta(expect, val, 0.0000001)
 	}
 }

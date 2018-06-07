@@ -94,11 +94,11 @@ func (m *Metadata) GPSPosition() (float64, float64, bool) {
 		return 0, 0, false
 	}
 
-	latF, err := parseGPS(lat)
+	latF, err := ParseGPS(lat)
 	if err != nil {
 		return 0, 0, false
 	}
-	longF, err := parseGPS(long)
+	longF, err := ParseGPS(long)
 	if err != nil {
 		return 0, 0, false
 	}
@@ -156,9 +156,9 @@ func parse(data []byte) (*Metadata, error) {
 	return meta, nil
 }
 
-// parseGPS parses a Degree,Minute,Seconds GPS coordinate
+// ParseGPS parses a Degree,Minute,Seconds GPS coordinate
 // and turns it into a float64
-func parseGPS(coord string) (float64, error) {
+func ParseGPS(coord string) (float64, error) {
 	// exiftool coords look like: 51 deg 29' 57.68" N
 	parts := strings.Split(coord, " ")
 	var d, m, s float64
