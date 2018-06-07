@@ -156,7 +156,7 @@ func parse(data []byte) (*Metadata, error) {
 	return meta, nil
 }
 
-// ParseGPS parses a Degree,Minute,Seconds GPS coordinate
+// ParseGPS parses a Degree,Minute,Seconds GPS coordinate from exiftoll
 // and turns it into a float64
 func ParseGPS(coord string) (float64, error) {
 	// exiftool coords look like: 51 deg 29' 57.68" N
