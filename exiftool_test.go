@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExtractFlags(t *testing.T) {
+func TestExtract(t *testing.T) {
 	assert := assert.New(t)
 	data, err := Extract("exiftool", "testdata/IMG_7238.JPG", "-j", "-CircleOfConfusion")
 	if !assert.NoError(err) {
@@ -17,7 +17,18 @@ func TestExtractFlags(t *testing.T) {
 	coc, err := jsonparser.GetString(data, "[0]", "CircleOfConfusion")
 	assert.NoError(err)
 	assert.Equal("0.004 mm", coc)
+}
 
+func TestExtractDateFormat(t *testing.T) {
+	assert := assert.New(t)
+	data, err := Extract("exiftool", "testdata/IMG_7238.JPG", "-j", "-CreateDate", "-dateFormat", "%Y-%m")
+	if !assert.NoError(err) {
+		return
+	}
+	createdate, err := jsonparser.GetString(data, "[0]", "CreateDate")
+	if assert.NoError(err) {
+		assert.Equal("2016-06", createdate)
+	}
 }
 
 func testExtractReaderFlags(t *testing.T) {
