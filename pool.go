@@ -16,7 +16,7 @@ type Pool struct {
 	stopped   bool
 }
 
-func (p *Pool) Extract(filename string) (*Metadata, error) {
+func (p *Pool) Extract(filename string) ([]byte, error) {
 	if p.stopped {
 		return nil, errors.New("Stopped")
 	}
@@ -36,11 +36,7 @@ func (p *Pool) Stop() {
 	p.stopped = true
 }
 
-func NewPool(exiftool string, num int) (*Pool, error) {
-	return NewPoolFlags(exiftool, []string{"-json", "-binary", "-groupHeadings"}, num)
-}
-
-func NewPoolFlags(exiftool string, flags []string, num int) (*Pool, error) {
+func NewPool(exiftool string, num int, flags ...string) (*Pool, error) {
 	p := &Pool{
 		stayopens: make([]*Stayopen, num, num),
 		l:         num,
@@ -48,9 +44,9 @@ func NewPoolFlags(exiftool string, flags []string, num int) (*Pool, error) {
 
 	var err error
 	for i := 0; i < num; i++ {
-		p.stayopens[i], err = NewStayopenFlags(exiftool, flags)
+		p.stayopens[i], err = NewStayOpen(exiftool, flags...)
 		if err != nil {
-			return nil, errors.Wrap(err, "Could not create Stayopen")
+			return nil, errors.Wrap(err, "Could not create StayOpen")
 		}
 	}
 

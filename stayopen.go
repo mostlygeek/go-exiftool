@@ -32,7 +32,7 @@ type Stayopen struct {
 }
 
 // Extract calls exiftool on the supplied filename
-func (e *Stayopen) Extract(filename string) (*Metadata, error) {
+func (e *Stayopen) Extract(filename string) ([]byte, error) {
 	e.Lock()
 	defer e.Unlock()
 
@@ -44,7 +44,7 @@ func (e *Stayopen) Extract(filename string) (*Metadata, error) {
 	e.in <- filename
 	data := <-e.out
 
-	return parse(data)
+	return data, nil
 }
 
 func (e *Stayopen) Stop() {
@@ -58,7 +58,7 @@ func (e *Stayopen) Stop() {
 	e.cmd = nil
 }
 
-func NewStayopenFlags(exiftool string, flags []string) (*Stayopen, error) {
+func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 	stayopen := &Stayopen{
 		in:  make(chan string),
 		out: make(chan []byte),
@@ -121,10 +121,6 @@ func NewStayopenFlags(exiftool string, flags []string) (*Stayopen, error) {
 	// wait for both go-routines to startup
 	startReady.Wait()
 	return stayopen, nil
-}
-
-func NewStayopen(exiftool string) (*Stayopen, error) {
-	return NewStayopenFlags(exiftool, []string{"-json", "-binary", "-groupHeadings"})
 }
 
 func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {

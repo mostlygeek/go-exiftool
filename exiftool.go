@@ -10,25 +10,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Extract calls exiftool that is available in $PATH to extract and return a
-// Metadata struct. This is faster for large files like movies than ExtractReader
-// since exiftool is better able to skip bytes without reading all the data.
-func Extract(filename string) (*Metadata, error) {
-	return ExtractCustom("exiftool", filename)
-}
-
-// ExtractCustom calls a specific exiftool executable to
-// extract Metadata
-func ExtractCustom(exiftool, filename string) (*Metadata, error) {
-	data, err := ExtractFlags(exiftool, filename, "-json", "-binary", "-groupHeadings")
-	if err != nil {
-		return nil, err
-	}
-	return parse(data)
-}
-
-// ExtractParams calls a specific exiftool with custom flags
-func ExtractFlags(exiftool, filename string, flags ...string) ([]byte, error) {
+// Extract calls a specific exiftool with specific CLI flags
+func Extract(exiftool, filename string, flags ...string) ([]byte, error) {
 	flags = append(flags, filename)
 	cmd := exec.Command(exiftool, flags...)
 	var stdout, stderr bytes.Buffer
@@ -53,25 +36,9 @@ func ExtractFlags(exiftool, filename string, flags ...string) ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
-// ExtractReader extracts metadata from an io.Reader instead of a
-// filename on disk somewhere
-func ExtractReader(source io.Reader) (*Metadata, error) {
-	return ExtractReaderCustom("exiftool", source)
-}
-
-// ExtractReaderCustom calls a specific external exiftool to do the extraction
-func ExtractReaderCustom(exiftool string, source io.Reader) (*Metadata, error) {
-	data, err := ExtractReaderFlags(exiftool, source, "-json", "-binary", "-groupHeadings")
-	if err != nil {
-		return nil, err
-	}
-
-	return parse(data)
-}
-
-// ExtractReaderFlags calls a specific exiftool with custom flags. File data is
-// passed in via stdin
-func ExtractReaderFlags(exiftool string, source io.Reader, flags ...string) ([]byte, error) {
+// ExtractReader extracts EXIF/metadata from an io.Reader, passing data to
+// exiftool via stdin
+func ExtractReader(exiftool string, source io.Reader, flags ...string) ([]byte, error) {
 	flags = append(flags, "-")
 	cmd := exec.Command(exiftool, flags...)
 

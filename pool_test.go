@@ -3,25 +3,27 @@ package exiftool
 import (
 	"testing"
 
+	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPool(t *testing.T) {
 	assert := assert.New(t)
 
-	pool, err := NewPool("exiftool", 2)
+	pool, err := NewPool("exiftool", 2, "-json")
 	if !assert.NoError(err) {
 		return
 	}
 
-	meta, err := pool.Extract("testdata/IMG_7238.JPG")
+	data, err := pool.Extract("testdata/IMG_7238.JPG")
 	if !assert.NoError(err) {
 		return
 	}
 
-	create, ok := meta.CreateDate()
-	assert.True(ok)
-	assert.Equal("2016-06-17 19:16:43 +0100 BST", create.String())
+	createDate, err := jsonparser.GetString(data, "[0]", "CreateDate")
+	if assert.NoError(err) {
+		assert.Equal("2016:06:17 19:16:43", createDate)
+	}
 
 	pool.Stop()
 
