@@ -3,27 +3,29 @@ package exiftool
 import (
 	"bufio"
 	"io"
+
 	"testing"
 
+	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStayOpen(t *testing.T) {
 	assert := assert.New(t)
 
-	stayopen, err := NewStayopen("exiftool")
+	stayopen, err := NewStayOpen("exiftool", "-json")
 	if !assert.NoError(err) {
 		return
 	}
 
-	meta, err := stayopen.Extract("testdata/IMG_7238.JPG")
+	data, err := stayopen.Extract("testdata/IMG_7238.JPG")
 	if !assert.NoError(err) {
 		return
 	}
-
-	create, ok := meta.CreateDate()
-	assert.True(ok)
-	assert.Equal("2016-06-17 19:16:43 +0100 BST", create.String())
+	createDate, err := jsonparser.GetString(data, "[0]", "CreateDate")
+	if assert.NoError(err) {
+		assert.Equal("2016:06:17 19:16:43", createDate)
+	}
 
 	stayopen.Stop()
 
@@ -33,7 +35,7 @@ func TestStayOpen(t *testing.T) {
 }
 
 func TestStayOpenErrorsOnBadBin(t *testing.T) {
-	_, err := NewStayopen("not.a.rea.bin")
+	_, err := NewStayOpen("not.a.rea.bin")
 	assert.Error(t, err)
 }
 
