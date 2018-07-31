@@ -6,12 +6,20 @@ import (
 	"bytes"
 	"io"
 	"os/exec"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
 
+var ErrFilenameInvalid = errors.New("Filename contains control characters")
+
 // Extract calls a specific exiftool with specific CLI flags
 func Extract(exiftool, filename string, flags ...string) ([]byte, error) {
+
+	if !strconv.CanBackquote(filename) {
+		return nil, ErrFilenameInvalid
+	}
+
 	flags = append(flags, filename)
 	cmd := exec.Command(exiftool, flags...)
 	var stdout, stderr bytes.Buffer

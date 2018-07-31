@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -33,6 +34,10 @@ type Stayopen struct {
 
 // Extract calls exiftool on the supplied filename
 func (e *Stayopen) Extract(filename string) ([]byte, error) {
+	if !strconv.CanBackquote(filename) {
+		return nil, ErrFilenameInvalid
+	}
+
 	e.Lock()
 	defer e.Unlock()
 
