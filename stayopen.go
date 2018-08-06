@@ -34,15 +34,15 @@ type Stayopen struct {
 
 // Extract calls exiftool on the supplied filename
 func (e *Stayopen) Extract(filename string) ([]byte, error) {
-	if !strconv.CanBackquote(filename) {
-		return nil, ErrFilenameInvalid
-	}
-
 	e.Lock()
 	defer e.Unlock()
 
 	if e.cmd == nil {
 		return nil, errors.New("Stopped")
+	}
+
+	if !strconv.CanBackquote(filename) {
+		return nil, ErrFilenameInvalid
 	}
 
 	// send it and wait for it to come back from exiftool
@@ -110,6 +110,12 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 		scanner := bufio.NewScanner(stdout)
 		scanner.Split(splitReadyToken)
 
+		// for handling huge metadata blobs like those that come out
+		// of the Sony A6000. Hopefully a 4MB buffer will be enough to
+		// handle metadata from all assets ... if not let me know
+		buf := make([]byte, 0, 1024*64) // initial 64KB buffer, (the default)
+		scanner.Buffer(buf, 1024*1024*4)
+
 		startReady.Done()
 		stayopen.waitEnd.Add(1)
 
@@ -119,6 +125,11 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 			copy(sendResults, results)
 			stayopen.out <- sendResults
 		}
+
+		// TODO handle scanner.Err()
+		// what is the right thing to do here? restart ? send the error?
+		// perhaps stayopen.out should take a struct that can hold an error
+
 		close(stayopen.out)
 		stayopen.waitEnd.Done()
 	}()
