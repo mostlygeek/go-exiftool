@@ -25,9 +25,6 @@ type Stayopen struct {
 	in  chan string
 	out chan []byte
 
-	// keep this around to send the close signal
-	stdinPipe io.WriteCloser
-
 	// flags to pass to exiftool
 	flags []string
 
@@ -59,17 +56,9 @@ func (e *Stayopen) Stop() {
 	e.Lock()
 	defer e.Unlock()
 
-	if e.cmd == nil {
-		return
-	}
-
-	// send the shutdown command to exiftool
-	fmt.Fprintln(e.stdinPipe, "-stay_open\nFalse")
-	e.cmd.Wait()
-
-	// trigger goroutines to finish
+	// closing the in channel will trigger a shutdown
+	// wait for both goroutines to finish before finishing
 	close(e.in)
-
 	e.waitEnd.Wait()
 	e.cmd = nil
 }
@@ -83,9 +72,6 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 	stayopen.cmd = exec.Command(exiftool, "-stay_open", "True", "-@", "-")
 	stdin, _ := stayopen.cmd.StdinPipe()
 	stdout, _ := stayopen.cmd.StdoutPipe()
-
-	// used for sending the close command in Stop()
-	stayopen.stdinPipe = stdin
 
 	var startReady sync.WaitGroup
 	startReady.Add(2)
