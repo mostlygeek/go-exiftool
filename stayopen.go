@@ -17,25 +17,23 @@ import (
 // performance. Remember to call Stayopen.Stop() to signal exiftool to shutdown
 // to avoid zombie perl processes
 type Stayopen struct {
-	sync.Mutex
+	l   sync.Mutex
 	cmd *exec.Cmd
 
-	// channels for passing data to the input/output of
-	// the running exiftool
-	in  chan string
-	out chan []byte
+	stdin  io.WriteCloser
+	stdout io.ReadCloser
 
 	// flags to pass to exiftool
-	flags []string
+	flags   []string
+	flagStr string
 
-	// waits for stdin/stdout goroutines to finish when stopping
-	waitEnd sync.WaitGroup
+	scanner *bufio.Scanner
 }
 
 // Extract calls exiftool on the supplied filename
 func (e *Stayopen) Extract(filename string) ([]byte, error) {
-	e.Lock()
-	defer e.Unlock()
+	e.l.Lock()
+	defer e.l.Unlock()
 
 	if e.cmd == nil {
 		return nil, errors.New("Stopped")
@@ -45,97 +43,61 @@ func (e *Stayopen) Extract(filename string) ([]byte, error) {
 		return nil, ErrFilenameInvalid
 	}
 
-	// send it and wait for it to come back from exiftool
-	e.in <- filename
-	data := <-e.out
+	// send the request
+	fmt.Fprintln(e.stdin, e.flagStr)
+	fmt.Fprintln(e.stdin, filename)
+	fmt.Fprintln(e.stdin, "-execute")
 
-	return data, nil
+	if !e.scanner.Scan() {
+		return nil, errors.New("Failed to read output")
+	} else {
+		results := e.scanner.Bytes()
+		sendResults := make([]byte, len(results), len(results))
+		copy(sendResults, results)
+		return sendResults, nil
+	}
 }
 
 func (e *Stayopen) Stop() {
-	e.Lock()
-	defer e.Unlock()
+	e.l.Lock()
+	defer e.l.Unlock()
 
-	// closing the in channel will trigger a shutdown
-	// wait for both goroutines to finish before finishing
-	close(e.in)
-	e.waitEnd.Wait()
+	// write message telling it to close
+	// but don't actually wait for the command to stop
+	fmt.Fprintln(e.stdin, "-stay_open")
+	fmt.Fprintln(e.stdin, "False")
+	fmt.Fprintln(e.stdin, "-execute")
 	e.cmd = nil
 }
 
 func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 	stayopen := &Stayopen{
-		in:  make(chan string),
-		out: make(chan []byte),
+		flags:   flags,
+		flagStr: strings.Join(flags, "\n"),
 	}
 
 	stayopen.cmd = exec.Command(exiftool, "-stay_open", "True", "-@", "-")
-	stdin, _ := stayopen.cmd.StdinPipe()
-	stdout, _ := stayopen.cmd.StdoutPipe()
 
-	var startReady sync.WaitGroup
-	startReady.Add(2)
+	stdin, err := stayopen.cmd.StdinPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed getting stdin pipe")
+	}
+
+	stdout, err := stayopen.cmd.StdoutPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed getting stdout pipe")
+	}
+
+	stayopen.stdin = stdin
+	stayopen.stdout = stdout
+	stayopen.scanner = bufio.NewScanner(stdout)
+	stayopen.scanner.Split(splitReadyToken)
 
 	if err := stayopen.cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "Failed starting exiftool in stay_open mode")
 	}
 
-	// send commands to exiftool's stdin
-	go func() {
-		startReady.Done()
-		stayopen.waitEnd.Add(1)
-
-		// join them cause it's a bit more efficient
-		fStr := strings.Join(flags, "\n")
-		for filename := range stayopen.in {
-			fmt.Fprintln(stdin, fStr)
-			fmt.Fprintln(stdin, filename)
-			fmt.Fprintln(stdin, "-execute")
-		}
-
-		// write message telling it to close
-		// but don't actually wait for the command to stop
-		fmt.Fprintln(stdin, "-stay_open")
-		fmt.Fprintln(stdin, "False")
-		fmt.Fprintln(stdin, "-execute")
-
-		// closing stdout will stop the scanner goroutine
-		stdout.Close()
-		stayopen.waitEnd.Done()
-	}()
-
-	// scan exiftool's stdout, parse out messages
-	// and publish them on the out channel
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		scanner.Split(splitReadyToken)
-
-		// for handling huge metadata blobs like those that come out
-		// of the Sony A6000. Hopefully a 4MB buffer will be enough to
-		// handle metadata from all assets ... if not let me know
-		buf := make([]byte, 0, 1024*64) // initial 64KB buffer, (the default)
-		scanner.Buffer(buf, 1024*1024*4)
-
-		startReady.Done()
-		stayopen.waitEnd.Add(1)
-
-		for scanner.Scan() {
-			results := scanner.Bytes()
-			sendResults := make([]byte, len(results), len(results))
-			copy(sendResults, results)
-			stayopen.out <- sendResults
-		}
-
-		// TODO handle scanner.Err()
-		// what is the right thing to do here? restart ? send the error?
-		// perhaps stayopen.out should take a struct that can hold an error
-
-		close(stayopen.out)
-		stayopen.waitEnd.Done()
-	}()
-
 	// wait for both go-routines to startup
-	startReady.Wait()
 	return stayopen, nil
 }
 
