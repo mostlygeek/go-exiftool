@@ -17,6 +17,10 @@ type Pool struct {
 }
 
 func (p *Pool) Extract(filename string) ([]byte, error) {
+	return p.ExtractFlags(filename)
+}
+
+func (p *Pool) ExtractFlags(filename string, flags ...string) ([]byte, error) {
 	if p.stopped {
 		return nil, errors.New("Stopped")
 	}
@@ -24,7 +28,7 @@ func (p *Pool) Extract(filename string) ([]byte, error) {
 	p.c++
 	key := p.c % p.l
 	p.Unlock()
-	return p.stayopens[key].Extract(filename)
+	return p.stayopens[key].ExtractFlags(filename, flags...)
 }
 
 func (p *Pool) Stop() {
@@ -36,6 +40,7 @@ func (p *Pool) Stop() {
 	p.stopped = true
 }
 
+// NewPool creates a *Pool with default flags to pass to every Extract call
 func NewPool(exiftool string, num int, flags ...string) (*Pool, error) {
 	p := &Pool{
 		stayopens: make([]*Stayopen, num, num),

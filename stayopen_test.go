@@ -27,6 +27,19 @@ func TestStayOpen(t *testing.T) {
 		assert.Equal("2016:06:17 19:16:43", createDate)
 	}
 
+	data, err = stayopen.ExtractFlags("testdata/IMG_7238.JPG", "-ShutterSpeed")
+	if !assert.NoError(err) {
+		return
+	}
+	if ss, err := jsonparser.GetString(data, "[0]", "ShutterSpeed"); assert.NoError(err) {
+		assert.Equal("1/123", ss)
+	}
+
+	// make sure there's nothing in data other than shutterspeed
+	createDate, err = jsonparser.GetString(data, "[0]", "CreateDate")
+	assert.NotNil(err)
+	assert.Equal("", createDate)
+
 	stayopen.Stop()
 
 	// extracting after stop should fail

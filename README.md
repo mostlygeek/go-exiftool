@@ -1,18 +1,22 @@
 [![](https://godoc.org/github.com/mostlygeek/parhash?status.svg)](https://godoc.org/github.com/mostlygeek/go-exiftool)
 
+# WARNING
+
+I change this library a lot.  Don't consider the API stable until a version 1.0 is released
+
 # About
 
-go-exiftool makes it easy to extract metadata with [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/) and work with it in Go.  There are currently no comparable native Go libraries with the breadth and depth of exiftool. In exchange for functionality there is a bit of a performance and a deployment penalty. 
+go-exiftool makes it easy to extract metadata with [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/) and work with it in Go.  There are currently no comparable native Go libraries with the breadth and depth of exiftool. In exchange for functionality there is a bit of a performance and a deployment penalty.
 
-Fortunately, these are minimal. exiftool only requires perl5, which is available by default on almost every platform. The performance overhead of using an external program can be mitigated in many ways (ie: parallel processing). Using `Stayopen` and `Pool` helper libraries makes metadata extraction pretty fast.  On a 13" 2017 Macbook Pro I was able to extract metadata for 600 images in about 4 seconds. 
+Fortunately, these are minimal. exiftool only requires perl5, which is available by default on almost every platform. The performance overhead of using an external program can be mitigated in many ways (ie: parallel processing). Using `Stayopen` and `Pool` helper libraries makes metadata extraction pretty fast.  On a 13" 2017 Macbook Pro I was able to extract metadata for 600 images in about 4 seconds.
 
-This library was opensourced so others can _not worry about it_ and just work with the metadata. :) 
+This library was opensourced so others can _not worry about it_ and just work with the metadata. :)
 
 ## Notice
 
-This library is still pretty young. Please use and report any bugs and issues. 
+This library is still pretty young. Please use and report any bugs and issues.
 
-## License 
+## License
 
 ```
 MIT License

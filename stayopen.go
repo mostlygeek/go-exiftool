@@ -23,15 +23,18 @@ type Stayopen struct {
 	stdin  io.WriteCloser
 	stdout io.ReadCloser
 
-	// flags to pass to exiftool
-	flags   []string
-	flagStr string
+	// default flags to pass to every extract call
+	defaultFlags string
 
 	scanner *bufio.Scanner
 }
 
 // Extract calls exiftool on the supplied filename
 func (e *Stayopen) Extract(filename string) ([]byte, error) {
+	return e.ExtractFlags(filename)
+}
+
+func (e *Stayopen) ExtractFlags(filename string, flags ...string) ([]byte, error) {
 	e.l.Lock()
 	defer e.l.Unlock()
 
@@ -44,7 +47,10 @@ func (e *Stayopen) Extract(filename string) ([]byte, error) {
 	}
 
 	// send the request
-	fmt.Fprintln(e.stdin, e.flagStr)
+	fmt.Fprintln(e.stdin, e.defaultFlags)
+	if len(flags) > 0 {
+		fmt.Fprintln(e.stdin, strings.Join(flags, "\n"))
+	}
 	fmt.Fprintln(e.stdin, filename)
 	fmt.Fprintln(e.stdin, "-execute")
 
@@ -56,6 +62,7 @@ func (e *Stayopen) Extract(filename string) ([]byte, error) {
 		copy(sendResults, results)
 		return sendResults, nil
 	}
+
 }
 
 func (e *Stayopen) Stop() {
@@ -71,9 +78,13 @@ func (e *Stayopen) Stop() {
 }
 
 func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
+
+	var defaultFlags string
+	if len(flags) > 0 {
+		defaultFlags = strings.Join(flags, "\n")
+	}
 	stayopen := &Stayopen{
-		flags:   flags,
-		flagStr: strings.Join(flags, "\n"),
+		defaultFlags: defaultFlags,
 	}
 
 	stayopen.cmd = exec.Command(exiftool, "-stay_open", "True", "-@", "-")
