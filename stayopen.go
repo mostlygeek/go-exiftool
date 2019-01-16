@@ -113,11 +113,13 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 }
 
 func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if i := bytes.Index(data, []byte("\n{ready}\n")); i >= 0 {
-		if atEOF && len(data) == (i+9) { // nothing left to scan
-			return i + 9, data[:i], bufio.ErrFinalToken
-		} else {
-			return i + 9, data[:i], nil
+	if i := bytes.Index(data, []byte("\n{ready")); i >= 0 {
+		if n := bytes.IndexByte(data[i+1:], '\n'); n >= 0 {
+			if atEOF && len(data) == (n+i+2) { // nothing left to scan
+				return n + i + 2, data[:i+1], bufio.ErrFinalToken
+			} else {
+				return n + i + 2, data[:i+1], nil
+			}
 		}
 	}
 

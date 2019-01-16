@@ -59,19 +59,19 @@ func TestSplitReadyToken(t *testing.T) {
 	advance, token, err := splitReadyToken(data, false)
 	assert.NoError(err)
 	assert.Equal(12, advance)
-	assert.Equal([]byte("xxx"), token)
+	assert.Equal([]byte("xxx\n"), token)
 
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, false)
 	assert.NoError(err)
 	assert.Equal(12, advance)
-	assert.Equal([]byte("yyy"), token)
+	assert.Equal([]byte("yyy\n"), token)
 
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, true)
 	assert.Equal(bufio.ErrFinalToken, err)
 	assert.Equal(12, advance)
-	assert.Equal([]byte("zzz"), token)
+	assert.Equal([]byte("zzz\n"), token)
 }
 
 // TestSplitReadyTokenPartial tests that more data is requested
@@ -104,6 +104,6 @@ func TestSplitReadyTokenFinalToken(t *testing.T) {
 	data := []byte("--\n{ready}\n") // just a ready token
 	advance, token, err := splitReadyToken(data, true)
 	assert.Equal(11, advance)
-	assert.Equal([]byte("--"), token)
+	assert.Equal([]byte("--\n"), token)
 	assert.Equal(bufio.ErrFinalToken, err)
 }
