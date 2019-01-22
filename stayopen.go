@@ -112,12 +112,37 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 	return stayopen, nil
 }
 
-func splitReadyToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if i := bytes.Index(data, []byte("\n{ready}\n")); i >= 0 {
-		if atEOF && len(data) == (i+9) { // nothing left to scan
-			return i + 9, data[:i], bufio.ErrFinalToken
+func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
+	if tokenPos := bytes.Index(data, []byte("{ready}")); tokenPos >= 0 {
+
+		// incomplete data, no line terminator for {ready} token
+		if len(data) == tokenPos+7 {
+			return 0, nil, nil
+		}
+
+		// On Windows the line endings from Perl will be \r\n, whereas
+		// on posix systems it should be \n.  If {ready} is followed by
+		// a \r, then assume the full token we are looking for is:
+		//
+		//   \r\n{ready}\r\n
+		//
+		// otherwise assume it is:
+		//
+		//   \n{ready}\n
+		var tokenSize int
+		if len(data) > tokenPos-2 && data[tokenPos-2] == byte('\r') {
+			tokenSize = 11          // \r\n{ready}\r\n = 11 bytes
+			tokenPos = tokenPos - 2 // strip \r\n from data
 		} else {
-			return i + 9, data[:i], nil
+			// assume \n{ready}\n as the token + line endings
+			tokenSize = 9
+			tokenPos = tokenPos - 1
+		}
+
+		if atEOF && len(data) == (tokenPos+tokenSize) { // nothing left to scan
+			return tokenPos + tokenSize, data[:tokenPos], bufio.ErrFinalToken
+		} else {
+			return tokenPos + tokenSize, data[:tokenPos], nil
 		}
 	}
 

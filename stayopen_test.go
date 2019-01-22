@@ -74,6 +74,28 @@ func TestSplitReadyToken(t *testing.T) {
 	assert.Equal([]byte("zzz"), token)
 }
 
+func TestSplitReadyTokenWindows(t *testing.T) {
+	assert := assert.New(t)
+	data := []byte("xxx\r\n{ready}\r\nyyy\r\n{ready}\r\nzzz\r\n{ready}\r\n")
+
+	advance, token, err := splitReadyToken(data, false)
+	assert.NoError(err)
+	assert.Equal(14, advance)
+	assert.Equal([]byte("xxx"), token)
+
+	data = data[advance:]
+	advance, token, err = splitReadyToken(data, false)
+	assert.NoError(err)
+	assert.Equal(14, advance)
+	assert.Equal([]byte("yyy"), token)
+
+	data = data[advance:]
+	advance, token, err = splitReadyToken(data, true)
+	assert.Equal(bufio.ErrFinalToken, err)
+	assert.Equal(14, advance)
+	assert.Equal([]byte("zzz"), token)
+}
+
 // TestSplitReadyTokenPartial tests that more data is requested
 // when we don't have a full delimter yet
 func TestSplitReadyTokenPartial(t *testing.T) {
