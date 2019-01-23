@@ -54,45 +54,47 @@ func TestStayOpenErrorsOnBadBin(t *testing.T) {
 
 func TestSplitReadyToken(t *testing.T) {
 	assert := assert.New(t)
-	data := []byte("xxx\n{ready}\nyyy\n{ready}\nzzz\n{ready}\n")
+	data := []byte("xxx{ready}\nyyy\n{ready}\nzzz{ready}\n")
 
 	advance, token, err := splitReadyToken(data, false)
 	assert.NoError(err)
-	assert.Equal(12, advance)
+	assert.Equal(11, advance)
 	assert.Equal([]byte("xxx"), token)
 
+	// note that yyy has extra line ending characters
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, false)
 	assert.NoError(err)
 	assert.Equal(12, advance)
-	assert.Equal([]byte("yyy"), token)
+	assert.Equal([]byte("yyy\n"), token)
 
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, true)
 	assert.Equal(bufio.ErrFinalToken, err)
-	assert.Equal(12, advance)
+	assert.Equal(11, advance)
 	assert.Equal([]byte("zzz"), token)
 }
 
 func TestSplitReadyTokenWindows(t *testing.T) {
 	assert := assert.New(t)
-	data := []byte("xxx\r\n{ready}\r\nyyy\r\n{ready}\r\nzzz\r\n{ready}\r\n")
 
+	data := []byte("xxx{ready}\r\nyyy\r\n{ready}\r\nzzz{ready}\r\n")
 	advance, token, err := splitReadyToken(data, false)
 	assert.NoError(err)
-	assert.Equal(14, advance)
+	assert.Equal(12, advance)
 	assert.Equal([]byte("xxx"), token)
 
+	// note that yyy has extra line ending characters
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, false)
 	assert.NoError(err)
 	assert.Equal(14, advance)
-	assert.Equal([]byte("yyy"), token)
+	assert.Equal([]byte("yyy\r\n"), token)
 
 	data = data[advance:]
 	advance, token, err = splitReadyToken(data, true)
 	assert.Equal(bufio.ErrFinalToken, err)
-	assert.Equal(14, advance)
+	assert.Equal(12, advance)
 	assert.Equal([]byte("zzz"), token)
 }
 
@@ -126,6 +128,20 @@ func TestSplitReadyTokenFinalToken(t *testing.T) {
 	data := []byte("--\n{ready}\n") // just a ready token
 	advance, token, err := splitReadyToken(data, true)
 	assert.Equal(11, advance)
-	assert.Equal([]byte("--"), token)
+	assert.Equal([]byte("--\n"), token)
 	assert.Equal(bufio.ErrFinalToken, err)
+}
+
+func TestSplitReadyTokenNoData(t *testing.T) {
+	assert := assert.New(t)
+	data := []byte("{ready}\n{ready}\n")
+	advance, token, err := splitReadyToken(data, false)
+	assert.Equal(8, advance)
+	assert.Len(token, 0)
+	assert.NoError(err)
+
+	advance, token, err = splitReadyToken(data, true)
+	assert.Equal(8, advance)
+	assert.Len(token, 0)
+	assert.NoError(err)
 }
