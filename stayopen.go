@@ -7,6 +7,7 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,9 @@ type Stayopen struct {
 
 	stdin  io.WriteCloser
 	stdout io.ReadCloser
+
+	// default flags to pass to every extract call
+	defaultFlags string
 
 	scanner *bufio.Scanner
 }
@@ -43,8 +47,9 @@ func (e *Stayopen) ExtractFlags(filename string, flags ...string) ([]byte, error
 	}
 
 	// send the request
-	for _, f := range flags {
-		fmt.Fprintln(e.stdin, f)
+	fmt.Fprintln(e.stdin, e.defaultFlags)
+	if len(flags) > 0 {
+		fmt.Fprintln(e.stdin, strings.Join(flags, "\n"))
 	}
 	fmt.Fprintln(e.stdin, filename)
 	fmt.Fprintln(e.stdin, "-execute")
@@ -74,10 +79,15 @@ func (e *Stayopen) Stop() {
 
 func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 
-	flags = append([]string{"-stay_open", "True", "-@", "-", "-common_args"}, flags...)
+	var defaultFlags string
+	if len(flags) > 0 {
+		defaultFlags = strings.Join(flags, "\n")
+	}
+	stayopen := &Stayopen{
+		defaultFlags: defaultFlags,
+	}
 
-	stayopen := &Stayopen{}
-	stayopen.cmd = exec.Command(exiftool, flags...)
+	stayopen.cmd = exec.Command(exiftool, "-stay_open", "True", "-@", "-")
 
 	stdin, err := stayopen.cmd.StdinPipe()
 	if err != nil {
