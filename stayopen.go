@@ -20,9 +20,8 @@ type Stayopen struct {
 	cmd *exec.Cmd
 
 	stdin  io.WriteCloser
-	stdout io.ReadCloser
-
-	scanner *bufio.Scanner
+	stdout *bufio.Scanner
+	stderr *bufio.Scanner
 }
 
 // Extract calls exiftool on the supplied filename
@@ -49,10 +48,20 @@ func (e *Stayopen) ExtractFlags(filename string, flags ...string) ([]byte, error
 	fmt.Fprintln(e.stdin, filename)
 	fmt.Fprintln(e.stdin, "-execute")
 
-	if !e.scanner.Scan() {
+	if !e.stdout.Scan() {
 		return nil, errors.New("Failed to read output")
+	} else if !e.stderr.Scan() {
+		return nil, errors.New("Failed to read error output")
 	} else {
-		results := e.scanner.Bytes()
+		if len(e.stdout.Bytes()) == 0 {
+			if len(e.stderr.Bytes()) > 0 {
+				return nil, errors.Errorf("%s", e.stderr.Text())
+			}
+
+			return nil, errors.New("No output")
+		}
+
+		results := e.stdout.Bytes()
 		sendResults := make([]byte, len(results), len(results))
 		copy(sendResults, results)
 		return sendResults, nil
@@ -74,7 +83,7 @@ func (e *Stayopen) Stop() {
 
 func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 
-	flags = append([]string{"-stay_open", "True", "-@", "-", "-common_args"}, flags...)
+	flags = append([]string{"-stay_open", "True", "-@", "-", "-common_args", "-echo4", "{ready}"}, flags...)
 
 	stayopen := &Stayopen{}
 	stayopen.cmd = exec.Command(exiftool, flags...)
@@ -89,10 +98,16 @@ func NewStayOpen(exiftool string, flags ...string) (*Stayopen, error) {
 		return nil, errors.Wrap(err, "Failed getting stdout pipe")
 	}
 
+	stderr, err := stayopen.cmd.StderrPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed getting stderr pipe")
+	}
+
 	stayopen.stdin = stdin
-	stayopen.stdout = stdout
-	stayopen.scanner = bufio.NewScanner(stdout)
-	stayopen.scanner.Split(splitReadyToken)
+	stayopen.stdout = bufio.NewScanner(stdout)
+	stayopen.stderr = bufio.NewScanner(stderr)
+	stayopen.stdout.Split(splitReadyToken)
+	stayopen.stderr.Split(splitReadyToken)
 
 	if err := stayopen.cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "Failed starting exiftool in stay_open mode")
