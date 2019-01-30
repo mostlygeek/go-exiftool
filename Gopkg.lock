@@ -3,12 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/bradfitz/latlong"
-  packages = ["."]
-  revision = "f3db6d0dff40d47957be82e1a6645574fb041f95"
-
-[[projects]]
-  branch = "master"
   name = "github.com/buger/jsonparser"
   packages = ["."]
   revision = "2cac668e8456b4284edb0715e17e2af02d3ec993"
@@ -46,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bb6223e37955823b56bb7a838954c899885d26f22e1ef618f3000880303ab3fb"
+  inputs-digest = "a2a5f814d02ac6842429f1a59cfa38ed50bd197d3b2ab467a87ca6f2bf45957b"
   solver-name = "gps-cdcl"
   solver-version = 1
