@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.11
+
+    working_directory: /go/src/github.com/mostlygeek/go-exiftool
+
+    steps:
+      - checkout
+
+      - run: sudo apt-get install -y exiftool
+      - run: go test -v .
